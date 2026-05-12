@@ -1,0 +1,48 @@
+version: "3.8"
+
+services:
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:24.1.2-alpine
+    container_name: signoz-clickhouse
+    restart: unless-stopped
+    volumes:
+      - /data/signoz/clickhouse:/var/lib/clickhouse
+    environment:
+      CLICKHOUSE_DB: signoz_metrics
+      CLICKHOUSE_USER: admin
+      CLICKHOUSE_PASSWORD: signoz_admin_secret
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: "1"
+
+  query-service:
+    image: signoz/query-service:0.45.0
+    container_name: signoz-query-service
+    restart: unless-stopped
+    depends_on:
+      - clickhouse
+    environment:
+      ClickHouseUrl: tcp://clickhouse:9000
+      CLICKHOUSE_USER: admin
+      CLICKHOUSE_PASSWORD: signoz_admin_secret
+      STORAGE: clickhouse
+
+  otel-collector:
+    image: signoz/signoz-otel-collector:0.102.0
+    container_name: signoz-otel-collector
+    restart: unless-stopped
+    depends_on:
+      - clickhouse
+    ports:
+      - "4317:4317"
+      - "4318:4318"
+
+  frontend:
+    image: signoz/frontend:0.45.0
+    container_name: signoz-frontend
+    restart: unless-stopped
+    depends_on:
+      - query-service
+    ports:
+      - "3301:3301"
+    environment:
+      NGINX_PORT: 3301
