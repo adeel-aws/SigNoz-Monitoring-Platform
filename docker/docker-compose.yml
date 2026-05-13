@@ -30,8 +30,9 @@ services:
       CLICKHOUSE_PASSWORD: signoz_admin_secret
       STORAGE: clickhouse
       TELEMETRY_ENABLED: "false"
+      SQLITE_DB_PATH: /var/lib/signoz/signoz.db   # ← fix 2: explicit sqlite path
     volumes:
-      - /data/signoz/query-service:/root/.signoz
+      - /data/signoz/query-service:/var/lib/signoz  # ← fix 2: corrected mount path
 
   otel-collector:
     image: signoz/signoz-otel-collector:0.102.0
@@ -42,6 +43,8 @@ services:
     ports:
       - "4317:4317"
       - "4318:4318"
+    volumes:
+      - /data/signoz/otel-collector-config.yaml:/etc/otel/config.yaml  # ← fix 1: correct internal path
 
   frontend:
     image: signoz/frontend:0.45.0
